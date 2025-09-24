@@ -1,0 +1,25 @@
+{
+  "name": "com.nostalgiagarden.playeracommodations",
+  "version": "0.0.0",
+  "displayName": "Player Acommodations",
+  "description": "Pre-built menus and accesibility features for any game",
+  "unity": "2022.3",
+  "unityRelease": "22f1",
+  "documentationUrl": "https://example.com/",
+  "changelogUrl": "https://example.com/changelog.html",
+  "licensesUrl": "https://example.com/licensing.html",
+  "keywords": [
+    "keyword1",
+    "keyword2",
+    "keyword3"
+  ],
+  "author": {
+    "name": "motif",
+    "email": "nostalgiagardengames@gmail.com",
+    "url": "https://github.com/Gamekour"
+  },
+  "dependencies": {
+    "com.unity.inputsystem": "1.7.0",
+    "com.unity.textmeshpro": "3.0.7"
+  }
+}
