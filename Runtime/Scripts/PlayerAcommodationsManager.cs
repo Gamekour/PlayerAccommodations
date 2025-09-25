@@ -676,7 +676,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
             }
         };
 
-        PlayerAcommGlobal.targetQualityTier = PlayerPrefs.GetInt("qualityTier", QualitySettings.GetQualityLevel());
+        PlayerAcommGlobal.targetQualityTier = PlayerPrefs.GetInt("qualityTier", defaultQualityTier);
         if (PlayerAcommGlobal.targetQualityTier != -1)
         {
             QualitySettings.SetQualityLevel(PlayerAcommGlobal.targetQualityTier);
