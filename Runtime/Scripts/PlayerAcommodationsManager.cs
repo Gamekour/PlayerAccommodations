@@ -45,16 +45,34 @@ public class PlayerAcommodationsManager : MonoBehaviour
     [Tooltip("Parent for generated volume sliders")]
     public Transform audioSliderRoot;
     [Tooltip("Name of exposed volume parameters to generate sliders for")]
-    public string[] volumeParameterNames = {"volume_Master", "volume_Sound Effects", "volume_Music"};
+    public string[] volumeParameterNames = { "volume_Master", "volume_Sound Effects", "volume_Music" };
     [Tooltip("Template for quality setting options in the Video settings")]
     public GameObject graphicsDropdownPrefab;
     [Tooltip("Parent for generated graphics setting dropdowns")]
     public Transform graphicsDropdownRoot;
     [Tooltip("Name of quality setting parameters to generate settings for")]
     public string[] graphicsOptionNames = { "antiAliasing", "anisotropicFiltering" };
+    [Tooltip("Dropdown to populate with available screen resolutions")]
+    public TMP_Dropdown resolutionDropdown;
+    [Tooltip("Dropdown to populate with available screen refresh rates")]
+    public TMP_Dropdown refreshRateDropdown;
+    [Tooltip("Dropdown to populate with available QualitySettings tiers")]
+    public TMP_Dropdown qualityTierDropdown;
+    [Tooltip("Dropdown for Fullscreen mode")]
+    public TMP_Dropdown fullscreenModeDropdown;
+    [Tooltip("Panel for apply, discard, and reset to default buttons")]
+    public GameObject changeControlPanel;
+    [Tooltip("Index of default quality tier")]
+    public int defaultQualityTier = 1;
+    [Tooltip("Prompt to confirm changes if leaving settings without saving")]
+    public GameObject confirmChangesPrompt;
 
     //PRIVATE VARIABLES
     private Coroutine sceneLoadRoutine;
+    private Resolution[] availableResolutions;
+    private List<RefreshRate> availableRefreshRates = new List<RefreshRate>();
+    private List<GameObject> graphicsDropdowns = new List<GameObject>();
+    private bool changeMade = false;
 
     //MACROS
     private readonly string NAME_SETTINGTITLE = "SettingName";
@@ -69,13 +87,28 @@ public class PlayerAcommodationsManager : MonoBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        PlayerAcommGlobal.activeGameScene = defaultGameScene;
+        if (PlayerPrefs.HasKey("activeGameScene"))
+            PlayerAcommGlobal.activeGameScene = PlayerPrefs.GetString("activeGameScene");
+        else
+        {
+            PlayerAcommGlobal.activeGameScene = defaultGameScene;
+            PlayerPrefs.SetString("activeGameScene", defaultGameScene);
+        }
 
+        LoadSettings();
         InitializeVolumeSliders();
-        InitializeGraphicsTMP_Dropdowns();
+        InitializeDropdowns();
+
     }
 
-    public void SetActiveGameScene(string sceneName) => PlayerAcommGlobal.activeGameScene=sceneName;
+    public void InitializeDropdowns()
+    {
+        PopulateDisplayOptions();
+        InitializeGraphicsDropdowns();
+        InitializeQualityTierDropdown();
+    }
+
+    public void SetActiveGameScene(string sceneName) => PlayerAcommGlobal.activeGameScene = sceneName;
 
     public void LoadActiveGameScene()
     {
@@ -94,6 +127,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
         for (int i = 0; i < settingsPanels.Length; i++)
             settingsPanels[i].SetActive(i == PlayerAcommGlobal.activeSettingsPanel);
         videoPreview.SetActive(PlayerAcommGlobal.activeSettingsPanel == videoPanelIndex);
+        changeControlPanel.SetActive(PlayerAcommGlobal.activeSettingsPanel == videoPanelIndex);
     }
 
     public void SetSettingsPanel(int index)
@@ -130,16 +164,28 @@ public class PlayerAcommodationsManager : MonoBehaviour
         display.text = percentage.ToString() + "%";
     }
 
-    public void InitializeGraphicsTMP_Dropdowns()
+    public void InitializeQualityTierDropdown()
+    {
+        qualityTierDropdown.ClearOptions();
+
+        List<TMP_Dropdown.OptionData> qualityLevelOptions = new List<TMP_Dropdown.OptionData> { new TMP_Dropdown.OptionData("Custom") };
+        foreach (var tier in QualitySettings.names)
+            qualityLevelOptions.Add(new TMP_Dropdown.OptionData(tier));
+        qualityTierDropdown.AddOptions(qualityLevelOptions);
+        qualityTierDropdown.SetValueWithoutNotify(QualitySettings.GetQualityLevel() + 1);
+        qualityTierDropdown.onValueChanged.AddListener((int value) => SetQualityTier(value));
+    }
+
+    public void InitializeGraphicsDropdowns()
     {
         for (int i = 0; i < graphicsOptionNames.Length; i++)
         {
             string optionName = graphicsOptionNames[i];
-            GameObject newTMP_DropdownObj = Instantiate(graphicsDropdownPrefab, graphicsDropdownRoot);
-            RectTransform newTransform = newTMP_DropdownObj.GetComponent<RectTransform>();
+            GameObject newDropdownObj = Instantiate(graphicsDropdownPrefab, graphicsDropdownRoot);
+            RectTransform newTransform = newDropdownObj.GetComponent<RectTransform>();
             newTransform.anchoredPosition = Vector3.down * newTransform.rect.height * i;
-            TMP_Dropdown TMP_Dropdown = newTMP_DropdownObj.GetComponentInChildren<TMP_Dropdown>();
-            newTMP_DropdownObj.name = optionName;
+            TMP_Dropdown TMP_Dropdown = newDropdownObj.GetComponentInChildren<TMP_Dropdown>();
+            newDropdownObj.name = optionName;
             TMP_Dropdown.name = optionName;
 
             TMP_Text nameText = newTransform.Find(NAME_SETTINGTITLE).GetComponent<TMP_Text>();
@@ -164,7 +210,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                         case 8: aaValue = 3; break;
                         default: aaValue = 0; break;
                     }
-                    TMP_Dropdown.value = aaValue;
+                    TMP_Dropdown.SetValueWithoutNotify(aaValue);
                     break;
                 case "anisotropicFiltering":
                     TMP_Dropdown.ClearOptions();
@@ -173,7 +219,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                         new TMP_Dropdown.OptionData { text = "Enable" },
                         new TMP_Dropdown.OptionData { text = "ForceEnable" }
                     });
-                    TMP_Dropdown.value = (int)QualitySettings.anisotropicFiltering;
+                    TMP_Dropdown.SetValueWithoutNotify((int)QualitySettings.anisotropicFiltering);
                     break;
                 case "pixelLightCount":
                     TMP_Dropdown.ClearOptions();
@@ -188,7 +234,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                         new TMP_Dropdown.OptionData { text = "7" },
                         new TMP_Dropdown.OptionData { text = "8" }
                     });
-                    TMP_Dropdown.value = Mathf.Clamp(QualitySettings.pixelLightCount, 0, 8);
+                    TMP_Dropdown.SetValueWithoutNotify(Mathf.Clamp(QualitySettings.pixelLightCount, 0, 8));
                     break;
                 case "shadows":
                     TMP_Dropdown.ClearOptions();
@@ -197,7 +243,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                         new TMP_Dropdown.OptionData { text = "HardOnly" },
                         new TMP_Dropdown.OptionData { text = "All" }
                     });
-                    TMP_Dropdown.value = (int)QualitySettings.shadows;
+                    TMP_Dropdown.SetValueWithoutNotify((int)QualitySettings.shadows);
                     break;
                 case "shadowResolution":
                     TMP_Dropdown.ClearOptions();
@@ -207,7 +253,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                         new TMP_Dropdown.OptionData { text = "High" },
                         new TMP_Dropdown.OptionData { text = "VeryHigh" }
                     });
-                    TMP_Dropdown.value = (int)QualitySettings.shadowResolution;
+                    TMP_Dropdown.SetValueWithoutNotify((int)QualitySettings.shadowResolution);
                     break;
                 case "shadowProjection":
                     TMP_Dropdown.ClearOptions();
@@ -215,7 +261,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                         new TMP_Dropdown.OptionData { text = "CloseFit" },
                         new TMP_Dropdown.OptionData { text = "StableFit" }
                     });
-                    TMP_Dropdown.value = (int)QualitySettings.shadowProjection;
+                    TMP_Dropdown.SetValueWithoutNotify((int)QualitySettings.shadowProjection);
                     break;
                 case "shadowCascades":
                     TMP_Dropdown.ClearOptions();
@@ -232,7 +278,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                         case 4: cascades = 2; break;
                         default: cascades = 0; break;
                     }
-                    TMP_Dropdown.value = cascades;
+                    TMP_Dropdown.SetValueWithoutNotify(cascades);
                     break;
                 case "shadowDistance":
                     TMP_Dropdown.ClearOptions();
@@ -240,7 +286,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                     for (int d = 0; d <= 200; d += 20)
                         shadowDistOptions.Add(new TMP_Dropdown.OptionData { text = d.ToString() });
                     TMP_Dropdown.AddOptions(shadowDistOptions);
-                    TMP_Dropdown.value = Mathf.Clamp(Mathf.RoundToInt(QualitySettings.shadowDistance / 20f), 0, shadowDistOptions.Count - 1);
+                    TMP_Dropdown.SetValueWithoutNotify(Mathf.Clamp(Mathf.RoundToInt(QualitySettings.shadowDistance / 20f), 0, shadowDistOptions.Count - 1));
                     break;
                 case "skinWeights":
                     TMP_Dropdown.ClearOptions();
@@ -249,7 +295,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                         new TMP_Dropdown.OptionData { text = "TwoBones" },
                         new TMP_Dropdown.OptionData { text = "FourBones" }
                     });
-                    TMP_Dropdown.value = (int)QualitySettings.skinWeights;
+                    TMP_Dropdown.SetValueWithoutNotify((int)QualitySettings.skinWeights);
                     break;
                 case "softParticles":
                     TMP_Dropdown.ClearOptions();
@@ -257,7 +303,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                         new TMP_Dropdown.OptionData { text = "Off" },
                         new TMP_Dropdown.OptionData { text = "On" }
                     });
-                    TMP_Dropdown.value = QualitySettings.softParticles ? 1 : 0;
+                    TMP_Dropdown.SetValueWithoutNotify(QualitySettings.softParticles ? 1 : 0);
                     break;
                 case "softVegetation":
                     TMP_Dropdown.ClearOptions();
@@ -265,7 +311,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                         new TMP_Dropdown.OptionData { text = "Off" },
                         new TMP_Dropdown.OptionData { text = "On" }
                     });
-                    TMP_Dropdown.value = QualitySettings.softVegetation ? 1 : 0;
+                    TMP_Dropdown.SetValueWithoutNotify(QualitySettings.softVegetation ? 1 : 0);
                     break;
                 case "realtimeReflectionProbes":
                     TMP_Dropdown.ClearOptions();
@@ -273,7 +319,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                         new TMP_Dropdown.OptionData { text = "Off" },
                         new TMP_Dropdown.OptionData { text = "On" }
                     });
-                    TMP_Dropdown.value = QualitySettings.realtimeReflectionProbes ? 1 : 0;
+                    TMP_Dropdown.SetValueWithoutNotify(QualitySettings.realtimeReflectionProbes ? 1 : 0);
                     break;
                 case "billboardsFaceCameraPosition":
                     TMP_Dropdown.ClearOptions();
@@ -282,7 +328,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                         new TMP_Dropdown.OptionData { text = "Off" },
                         new TMP_Dropdown.OptionData { text = "On" }
                     });
-                    TMP_Dropdown.value = QualitySettings.billboardsFaceCameraPosition ? 1 : 0;
+                    TMP_Dropdown.SetValueWithoutNotify(QualitySettings.billboardsFaceCameraPosition ? 1 : 0);
                     break;
                 case "vSyncCount":
                     TMP_Dropdown.ClearOptions();
@@ -292,7 +338,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                         new TMP_Dropdown.OptionData { text = "Every V Blank" },
                         new TMP_Dropdown.OptionData { text = "Every Second V Blank" }
                     });
-                    TMP_Dropdown.value = Mathf.Clamp(QualitySettings.vSyncCount, 0, 2);
+                    TMP_Dropdown.SetValueWithoutNotify(Mathf.Clamp(QualitySettings.vSyncCount, 0, 2));
                     break;
                 case "lodBias":
                     TMP_Dropdown.ClearOptions();
@@ -300,7 +346,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                     for (int l = 1; l <= 5; l++)
                         lodBiasOptions.Add(new TMP_Dropdown.OptionData { text = l.ToString() });
                     TMP_Dropdown.AddOptions(lodBiasOptions);
-                    TMP_Dropdown.value = Mathf.Clamp(Mathf.RoundToInt(QualitySettings.lodBias) - 1, 0, lodBiasOptions.Count - 1);
+                    TMP_Dropdown.SetValueWithoutNotify(Mathf.Clamp(Mathf.RoundToInt(QualitySettings.lodBias) - 1, 0, lodBiasOptions.Count - 1));
                     break;
                 case "maximumLODLevel":
                     TMP_Dropdown.ClearOptions();
@@ -308,7 +354,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                     for (int m = 0; m <= 5; m++)
                         maxLodOptions.Add(new TMP_Dropdown.OptionData { text = m.ToString() });
                     TMP_Dropdown.AddOptions(maxLodOptions);
-                    TMP_Dropdown.value = Mathf.Clamp(QualitySettings.maximumLODLevel, 0, maxLodOptions.Count - 1);
+                    TMP_Dropdown.SetValueWithoutNotify(Mathf.Clamp(QualitySettings.maximumLODLevel, 0, maxLodOptions.Count - 1));
                     break;
                 case "particleRaycastBudget":
                     TMP_Dropdown.ClearOptions();
@@ -320,7 +366,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                     int[] particleBudgets = { 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096 };
                     for (int iB = 0; iB < particleBudgets.Length; iB++)
                         if (QualitySettings.particleRaycastBudget == particleBudgets[iB]) particleIndex = iB;
-                    TMP_Dropdown.value = particleIndex;
+                    TMP_Dropdown.SetValueWithoutNotify(particleIndex);
                     break;
                 case "asyncUploadTimeSlice":
                     TMP_Dropdown.ClearOptions();
@@ -332,7 +378,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                     int[] timeSlices = { 1, 2, 4, 8, 16 };
                     for (int iT = 0; iT < timeSlices.Length; iT++)
                         if (QualitySettings.asyncUploadTimeSlice == timeSlices[iT]) timeSliceIndex = iT;
-                    TMP_Dropdown.value = timeSliceIndex;
+                    TMP_Dropdown.SetValueWithoutNotify(timeSliceIndex);
                     break;
                 case "asyncUploadBufferSize":
                     TMP_Dropdown.ClearOptions();
@@ -344,7 +390,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                     int[] bufferSizes = { 2, 4, 8, 16, 32, 64, 128, 256, 512 };
                     for (int iB = 0; iB < bufferSizes.Length; iB++)
                         if (QualitySettings.asyncUploadBufferSize == bufferSizes[iB]) bufferSizeIndex = iB;
-                    TMP_Dropdown.value = bufferSizeIndex;
+                    TMP_Dropdown.SetValueWithoutNotify(bufferSizeIndex);
                     break;
                 case "asyncUploadPersistentBuffer":
                     TMP_Dropdown.ClearOptions();
@@ -353,7 +399,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
                         new TMP_Dropdown.OptionData { text = "Off" },
                         new TMP_Dropdown.OptionData { text = "On" }
                     });
-                    TMP_Dropdown.value = QualitySettings.asyncUploadPersistentBuffer ? 1 : 0;
+                    TMP_Dropdown.SetValueWithoutNotify(QualitySettings.asyncUploadPersistentBuffer ? 1 : 0);
                     break;
                 case "resolutionScalingFixedDPIFactor":
                     TMP_Dropdown.ClearOptions();
@@ -361,19 +407,39 @@ public class PlayerAcommodationsManager : MonoBehaviour
                     for (int d = 1; d <= 5; d++)
                         dpiOptions.Add(new TMP_Dropdown.OptionData { text = d.ToString() });
                     TMP_Dropdown.AddOptions(dpiOptions);
-                    TMP_Dropdown.value = Mathf.Clamp(Mathf.RoundToInt(QualitySettings.resolutionScalingFixedDPIFactor) - 1, 0, dpiOptions.Count - 1);
+                    TMP_Dropdown.SetValueWithoutNotify(Mathf.Clamp(Mathf.RoundToInt(QualitySettings.resolutionScalingFixedDPIFactor) - 1, 0, dpiOptions.Count - 1));
                     break;
             }
 
             TMP_Dropdown.onValueChanged.AddListener((int value) => GraphicsOptionCallback(TMP_Dropdown));
+            graphicsDropdowns.Add(newDropdownObj);
         }
     }
 
     public void GraphicsOptionCallback(TMP_Dropdown TMP_Dropdown)
     {
-        string settingName = TMP_Dropdown.name;
-        int settingValue = TMP_Dropdown.value;
+        if (PlayerAcommGlobal.queuedQualitySettingChanges.ContainsKey(TMP_Dropdown.name))
+            PlayerAcommGlobal.queuedQualitySettingChanges[TMP_Dropdown.name] = TMP_Dropdown.value;
+        else
+            PlayerAcommGlobal.queuedQualitySettingChanges.Add(TMP_Dropdown.name, TMP_Dropdown.value);
+        PlayerAcommGlobal.targetQualityTier = -1;
+        qualityTierDropdown.SetValueWithoutNotify(0);
+        changeMade = true;
+    }
 
+    public void SetQualityTier(int index)
+    {
+        PlayerAcommGlobal.targetQualityTier = index - 1;
+        int returnToQualityLevel = QualitySettings.GetQualityLevel();
+        if (PlayerAcommGlobal.targetQualityTier != -1)
+            QualitySettings.SetQualityLevel(index);
+        UpdateGraphicsDropdowns();
+        QualitySettings.SetQualityLevel(returnToQualityLevel);
+        changeMade = true;
+    }
+
+    private static void ChangeQualitySettingByName(string settingName, int settingValue)
+    {
         switch (settingName)
         {
             case "antiAliasing":
@@ -477,6 +543,192 @@ public class PlayerAcommodationsManager : MonoBehaviour
             Menus[i].SetActive(Menus[i].name == menuName);
     }
 
+    public void SetFullscreenMode(int index)
+    {
+        PlayerAcommGlobal.targetFullscreenMode = (FullScreenMode)index;
+        changeMade = true;
+    }
+
+    public void PopulateDisplayOptions()
+    {
+        resolutionDropdown.ClearOptions();
+        refreshRateDropdown.ClearOptions();
+        availableResolutions = (Resolution[])Screen.resolutions.Clone();
+        availableRefreshRates.Clear();
+        List<TMP_Dropdown.OptionData> resolutionOptions = new();
+        List<TMP_Dropdown.OptionData> refreshRateOptions = new();
+        int defaultRefreshRateOption = 0;
+        int defaultResolutionOption = 0;
+        foreach(Resolution resolution in availableResolutions)
+        {
+            if (!availableRefreshRates.Contains(resolution.refreshRateRatio))
+            {
+                availableRefreshRates.Add(resolution.refreshRateRatio);
+                refreshRateOptions.Add(new TMP_Dropdown.OptionData(resolution.refreshRateRatio.ToString()));
+                if (resolution.refreshRateRatio.value == Screen.currentResolution.refreshRateRatio.value)
+                    defaultRefreshRateOption = refreshRateOptions.Count - 1;
+            }
+            string resolutionText = resolution.width.ToString() + "x" + resolution.height.ToString();
+            resolutionOptions.Add(new TMP_Dropdown.OptionData(resolutionText));
+            if (resolution.width == Screen.currentResolution.width && resolution.height == Screen.currentResolution.height)
+                defaultResolutionOption = resolutionOptions.Count - 1;
+        }
+        resolutionDropdown.AddOptions(resolutionOptions);
+        refreshRateDropdown.AddOptions(refreshRateOptions);
+        resolutionDropdown.SetValueWithoutNotify(defaultResolutionOption);
+        refreshRateDropdown.SetValueWithoutNotify(defaultRefreshRateOption);
+        resolutionDropdown.onValueChanged.AddListener((int value) => SetResolution(value));
+        refreshRateDropdown.onValueChanged.AddListener((int value) => SetRefreshRate(value));
+        PlayerAcommGlobal.targetResolution = Screen.currentResolution;
+        PlayerAcommGlobal.targetRefreshRate = Screen.currentResolution.refreshRateRatio;
+        fullscreenModeDropdown.SetValueWithoutNotify((int)Screen.fullScreenMode);
+    }
+
+    public void SetResolution(int index)
+    {
+        Resolution newRes = availableResolutions[index];
+        newRes.refreshRateRatio = PlayerAcommGlobal.targetRefreshRate;
+        PlayerAcommGlobal.targetResolution = newRes;
+        changeMade = true;
+    }
+
+    public void SetRefreshRate(int index)
+    {
+        Resolution newRes = PlayerAcommGlobal.targetResolution;
+        newRes.refreshRateRatio = availableRefreshRates[index];
+        PlayerAcommGlobal.targetResolution = newRes;
+        changeMade = true;
+    }
+
+    public void ApplyChanges()
+    {
+        Screen.SetResolution(PlayerAcommGlobal.targetResolution.width, PlayerAcommGlobal.targetResolution.height, PlayerAcommGlobal.targetFullscreenMode, PlayerAcommGlobal.targetRefreshRate);
+        if (PlayerAcommGlobal.targetQualityTier != -1)
+        {
+            QualitySettings.SetQualityLevel(PlayerAcommGlobal.targetQualityTier);
+        }
+        else if (PlayerAcommGlobal.queuedQualitySettingChanges.Count > 0)
+        {
+            foreach (string s in PlayerAcommGlobal.queuedQualitySettingChanges.Keys)
+                ChangeQualitySettingByName(s, PlayerAcommGlobal.queuedQualitySettingChanges[s]);
+        }
+        SaveSettings();
+        changeMade = false;
+    }
+
+    public void UpdateGraphicsDropdowns()
+    {
+        foreach (GameObject g in graphicsDropdowns)
+            Destroy(g);
+        graphicsDropdowns.Clear();
+        PlayerAcommGlobal.queuedQualitySettingChanges.Clear();
+        InitializeGraphicsDropdowns();
+    }
+
+    public void SaveSettings()
+    {
+        PlayerPrefs.SetInt("qualityTier", PlayerAcommGlobal.targetQualityTier);
+        if (PlayerAcommGlobal.targetQualityTier == -1) return;
+        PlayerPrefs.SetInt("fullscreenMode", (int)PlayerAcommGlobal.targetFullscreenMode);
+        PlayerPrefs.SetInt("resolutionWidth", PlayerAcommGlobal.targetResolution.width);
+        PlayerPrefs.SetInt("resolutionHeight", PlayerAcommGlobal.targetResolution.height);
+        PlayerPrefs.SetString("refreshRateNum", PlayerAcommGlobal.targetRefreshRate.numerator.ToString());
+        PlayerPrefs.SetString("refreshRateDen", PlayerAcommGlobal.targetRefreshRate.denominator.ToString());
+        PlayerPrefs.SetInt("antiAliasing", QualitySettings.antiAliasing);
+        PlayerPrefs.SetInt("anisotropicFiltering", (int)QualitySettings.anisotropicFiltering);
+        PlayerPrefs.SetInt("pixelLightCount", QualitySettings.pixelLightCount);
+        PlayerPrefs.SetInt("shadows", (int)QualitySettings.shadows);
+        PlayerPrefs.SetInt("shadowResolution", (int)QualitySettings.shadowResolution);
+        PlayerPrefs.SetInt("shadowProjection", (int)QualitySettings.shadowProjection);
+        PlayerPrefs.SetInt("shadowCascades", QualitySettings.shadowCascades);
+        PlayerPrefs.SetFloat("shadowDistance", QualitySettings.shadowDistance);
+        PlayerPrefs.SetInt("skinWeights", (int)QualitySettings.skinWeights);
+        PlayerPrefs.SetInt("softParticles", QualitySettings.softParticles ? 1 : 0);
+        PlayerPrefs.SetInt("softVegetation", QualitySettings.softVegetation ? 1 : 0);
+        PlayerPrefs.SetInt("realtimeReflectionProbes", QualitySettings.realtimeReflectionProbes ? 1 : 0);
+        PlayerPrefs.SetInt("billboardsFaceCameraPosition", QualitySettings.billboardsFaceCameraPosition ? 1 : 0);
+        PlayerPrefs.SetInt("vSyncCount", QualitySettings.vSyncCount);
+        PlayerPrefs.SetFloat("lodBias", QualitySettings.lodBias);
+        PlayerPrefs.SetInt("maximumLODLevel", QualitySettings.maximumLODLevel);
+        PlayerPrefs.SetInt("particleRaycastBudget", QualitySettings.particleRaycastBudget);
+        PlayerPrefs.SetInt("asyncUploadTimeSlice", QualitySettings.asyncUploadTimeSlice);
+        PlayerPrefs.SetInt("asyncUploadBufferSize", QualitySettings.asyncUploadBufferSize);
+        PlayerPrefs.SetInt("asyncUploadPersistentBuffer", QualitySettings.asyncUploadPersistentBuffer ? 1 : 0);
+        PlayerPrefs.SetFloat("resolutionScalingFixedDPIFactor", QualitySettings.resolutionScalingFixedDPIFactor);
+
+        PlayerPrefs.Save();
+    }
+
+    public void LoadSettings()
+    {
+        // PlayerAcommGlobal
+        PlayerAcommGlobal.targetFullscreenMode =
+            (FullScreenMode)PlayerPrefs.GetInt("fullscreenMode", (int)FullScreenMode.FullScreenWindow);
+
+        PlayerAcommGlobal.targetResolution = new Resolution
+        {
+            width = PlayerPrefs.GetInt("resolutionWidth", Screen.currentResolution.width),
+            height = PlayerPrefs.GetInt("resolutionHeight", Screen.currentResolution.height),
+            refreshRateRatio = new RefreshRate
+            {
+                numerator = uint.Parse(PlayerPrefs.GetString("refreshRateNum", Screen.currentResolution.refreshRateRatio.numerator.ToString())),
+                denominator = uint.Parse(PlayerPrefs.GetString("refreshRateDen", Screen.currentResolution.refreshRateRatio.denominator.ToString()))
+            }
+        };
+
+        PlayerAcommGlobal.targetQualityTier = PlayerPrefs.GetInt("qualityTier", QualitySettings.GetQualityLevel());
+        if (PlayerAcommGlobal.targetQualityTier != -1)
+        {
+            QualitySettings.SetQualityLevel(PlayerAcommGlobal.targetQualityTier);
+            return;
+        }
+
+        // QualitySettings
+        QualitySettings.antiAliasing = PlayerPrefs.GetInt("antiAliasing", QualitySettings.antiAliasing);
+        QualitySettings.anisotropicFiltering =
+            (AnisotropicFiltering)PlayerPrefs.GetInt("anisotropicFiltering", (int)QualitySettings.anisotropicFiltering);
+        QualitySettings.pixelLightCount = PlayerPrefs.GetInt("pixelLightCount", QualitySettings.pixelLightCount);
+        QualitySettings.shadows =
+            (ShadowQuality)PlayerPrefs.GetInt("shadows", (int)QualitySettings.shadows);
+        QualitySettings.shadowResolution =
+            (ShadowResolution)PlayerPrefs.GetInt("shadowResolution", (int)QualitySettings.shadowResolution);
+        QualitySettings.shadowProjection =
+            (ShadowProjection)PlayerPrefs.GetInt("shadowProjection", (int)QualitySettings.shadowProjection);
+        QualitySettings.shadowCascades = PlayerPrefs.GetInt("shadowCascades", QualitySettings.shadowCascades);
+        QualitySettings.shadowDistance = PlayerPrefs.GetFloat("shadowDistance", QualitySettings.shadowDistance);
+        QualitySettings.skinWeights =
+            (SkinWeights)PlayerPrefs.GetInt("skinWeights", (int)QualitySettings.skinWeights);
+        QualitySettings.softParticles = PlayerPrefs.GetInt("softParticles", QualitySettings.softParticles ? 1 : 0) == 1;
+        QualitySettings.softVegetation = PlayerPrefs.GetInt("softVegetation", QualitySettings.softVegetation ? 1 : 0) == 1;
+        QualitySettings.realtimeReflectionProbes = PlayerPrefs.GetInt("realtimeReflectionProbes", QualitySettings.realtimeReflectionProbes ? 1 : 0) == 1;
+        QualitySettings.billboardsFaceCameraPosition = PlayerPrefs.GetInt("billboardsFaceCameraPosition", QualitySettings.billboardsFaceCameraPosition ? 1 : 0) == 1;
+        QualitySettings.vSyncCount = PlayerPrefs.GetInt("vSyncCount", QualitySettings.vSyncCount);
+        QualitySettings.lodBias = PlayerPrefs.GetFloat("lodBias", QualitySettings.lodBias);
+        QualitySettings.maximumLODLevel = PlayerPrefs.GetInt("maximumLODLevel", QualitySettings.maximumLODLevel);
+        QualitySettings.particleRaycastBudget = PlayerPrefs.GetInt("particleRaycastBudget", QualitySettings.particleRaycastBudget);
+        QualitySettings.asyncUploadTimeSlice = PlayerPrefs.GetInt("asyncUploadTimeSlice", QualitySettings.asyncUploadTimeSlice);
+        QualitySettings.asyncUploadBufferSize = PlayerPrefs.GetInt("asyncUploadBufferSize", QualitySettings.asyncUploadBufferSize);
+        QualitySettings.asyncUploadPersistentBuffer = PlayerPrefs.GetInt("asyncUploadPersistentBuffer", QualitySettings.asyncUploadPersistentBuffer ? 1 : 0) == 1;
+        QualitySettings.resolutionScalingFixedDPIFactor = PlayerPrefs.GetFloat("resolutionScalingFixedDPIFactor", QualitySettings.resolutionScalingFixedDPIFactor);
+    }
+
+    public void ResetToDefaults()
+    {
+        qualityTierDropdown.value = defaultQualityTier;
+        resolutionDropdown.value = resolutionDropdown.options.Count - 1;
+        refreshRateDropdown.value = refreshRateDropdown.options.Count - 1;
+        fullscreenModeDropdown.value = fullscreenModeDropdown.options.Count - 1;
+        changeMade = false;
+    }
+
+    public void CheckChangePrompt()
+    {
+        if (changeMade)
+            confirmChangesPrompt.SetActive(true);
+        else
+            SwitchToActiveMainMenu();
+    }
+
     private IEnumerator LoadSceneInternal(string sceneName)
     {
         SetMenu("None");
@@ -495,4 +747,9 @@ public static class PlayerAcommGlobal
 {
     public static string activeGameScene = "";
     public static int activeSettingsPanel = 0;
+    public static int targetQualityTier = -1;
+    public static FullScreenMode targetFullscreenMode;
+    public static Resolution targetResolution;
+    public static RefreshRate targetRefreshRate;
+    public static Dictionary<string, int> queuedQualitySettingChanges = new Dictionary<string, int>();
 }
