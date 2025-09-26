@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -22,6 +23,8 @@ public class PlayerAcommodationsManager : MonoBehaviour
     public string mainMenuName = "MainMenu";
     [Tooltip("Name of the pause menu")]
     public string pauseMenuName = "PauseMenu";
+    [Tooltip("Pause Button")]
+    public InputAction pauseInput;
 
     [Header("Loading Screen(optional)")]
     [Tooltip("Prefab to enable when loading a new scene")]
@@ -72,7 +75,9 @@ public class PlayerAcommodationsManager : MonoBehaviour
     private Resolution[] availableResolutions;
     private List<RefreshRate> availableRefreshRates = new List<RefreshRate>();
     private List<GameObject> graphicsDropdowns = new List<GameObject>();
+    private float prevTimeScale = 1;
     private bool changeMade = false;
+    private bool paused = false;
 
     //MACROS
     private readonly string NAME_SETTINGTITLE = "SettingName";
@@ -99,6 +104,8 @@ public class PlayerAcommodationsManager : MonoBehaviour
         InitializeVolumeSliders();
         InitializeDropdowns();
 
+        pauseInput.Enable();
+        pauseInput.started += TogglePause;
     }
 
     public void InitializeDropdowns()
@@ -114,6 +121,12 @@ public class PlayerAcommodationsManager : MonoBehaviour
     {
         if (sceneLoadRoutine == null)
             StartCoroutine(LoadSceneInternal(PlayerAcommGlobal.activeGameScene));
+    }
+
+    public void LoadMainMenuScene()
+    {
+        if (sceneLoadRoutine == null)
+            StartCoroutine(LoadSceneInternal(mainMenuScene));
     }
 
     public void LoadSceneByName(string sceneName)
@@ -729,9 +742,41 @@ public class PlayerAcommodationsManager : MonoBehaviour
             SwitchToActiveMainMenu();
     }
 
+    private void TogglePause(InputAction.CallbackContext obj)
+    {
+        if (SceneManager.GetActiveScene().name == mainMenuScene)
+        {
+            UpdateGraphicsDropdowns();
+            PopulateDisplayOptions();
+            SwitchToActiveMainMenu();
+        }
+        else
+            SetPaused(!paused);
+    }
+
+    private void SetPaused(bool newState)
+    {
+        paused = newState;
+        if (!paused)
+        {
+            Time.timeScale = prevTimeScale;
+            SetMenu("None");
+        }
+        else
+        {
+            prevTimeScale = Time.timeScale;
+            Time.timeScale = 0;
+            SwitchToActiveMainMenu();
+        }
+    }
+
     private IEnumerator LoadSceneInternal(string sceneName)
     {
-        SetMenu("None");
+        SetPaused(false);
+        if (sceneName != mainMenuScene)
+            SetMenu("None");
+        else
+            SetMenu(mainMenuName);
         loadingScreen?.SetActive(true);
         AsyncOperation async = SceneManager.LoadSceneAsync(sceneName);
         while (!async.isDone)
