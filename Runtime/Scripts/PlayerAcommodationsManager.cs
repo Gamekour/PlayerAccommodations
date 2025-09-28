@@ -135,6 +135,24 @@ public class PlayerAcommodationsManager : MonoBehaviour
             StartCoroutine(LoadSceneInternal(sceneName));
     }
 
+    public void LoadNextScene()
+    {
+        if (sceneLoadRoutine == null)
+        {
+            int currentScene = SceneManager.GetActiveScene().buildIndex;
+            StartCoroutine(LoadSceneInternal(currentScene + 1));
+        }
+    }
+
+    public void LoadPrevScene()
+    {
+        if (sceneLoadRoutine != null)
+        {
+            int currentScene = SceneManager.GetActiveScene().buildIndex;
+            StartCoroutine(LoadSceneInternal(currentScene - 1));
+        }
+    }
+
     public void LoadActiveSettingsPanel()
     {
         for (int i = 0; i < settingsPanels.Length; i++)
@@ -770,6 +788,8 @@ public class PlayerAcommodationsManager : MonoBehaviour
         }
     }
 
+    public void ApplicationExit() => Application.Quit();
+
     private IEnumerator LoadSceneInternal(string sceneName)
     {
         SetPaused(false);
@@ -779,6 +799,24 @@ public class PlayerAcommodationsManager : MonoBehaviour
             SetMenu(mainMenuName);
         loadingScreen?.SetActive(true);
         AsyncOperation async = SceneManager.LoadSceneAsync(sceneName);
+        while (!async.isDone)
+        {
+            yield return null;
+            loadSpinner.transform.Rotate(transform.forward, loadSpinnerSpeed);
+        }
+        loadingScreen?.SetActive(false);
+    }
+
+    private IEnumerator LoadSceneInternal(int sceneIndex)
+    {
+        SetPaused(false);
+        int menuSceneBuildIndex = SceneManager.GetSceneByName(mainMenuScene).buildIndex;
+        if (sceneIndex != menuSceneBuildIndex)
+            SetMenu("None");
+        else
+            SetMenu(mainMenuName);
+        loadingScreen?.SetActive(true);
+        AsyncOperation async = SceneManager.LoadSceneAsync(sceneIndex);
         while (!async.isDone)
         {
             yield return null;
