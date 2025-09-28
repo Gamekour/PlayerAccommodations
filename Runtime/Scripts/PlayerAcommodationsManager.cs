@@ -108,6 +108,12 @@ public class PlayerAcommodationsManager : MonoBehaviour
         pauseInput.started += TogglePause;
     }
 
+    private void Start()
+    {
+        if (SceneManager.GetActiveScene().name == mainMenuScene)
+            SwitchToActiveMainMenu();
+    }
+
     public void InitializeDropdowns()
     {
         PopulateDisplayOptions();
