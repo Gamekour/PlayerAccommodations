@@ -106,6 +106,20 @@ public class PlayerAcommodationsManager : MonoBehaviour
 
         pauseInput.Enable();
         pauseInput.started += TogglePause;
+
+        for (int i = 0; i < 3; i++)
+        {
+            string key = "saveName_" + i;
+            if (PlayerPrefs.HasKey(key))
+                PlayerAcommSaveGlobal.saveSlots[i] = PlayerPrefs.GetString(key);
+            else
+                PlayerPrefs.SetString(key, PlayerAcommSaveGlobal.saveSlots[i]);
+        }
+
+        if (PlayerPrefs.HasKey("activeSaveSlot"))
+            PlayerAcommSaveGlobal.activeSaveSlot = PlayerPrefs.GetInt("activeSaveSlot");
+        else
+            PlayerPrefs.SetInt("activeSaveSlot", 0);
     }
 
     private void Start()
