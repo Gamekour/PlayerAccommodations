@@ -70,6 +70,12 @@ public class PlayerAcommodationsManager : MonoBehaviour
     [Tooltip("Prompt to confirm changes if leaving settings without saving")]
     public GameObject confirmChangesPrompt;
 
+    [Header("Save/Load")]
+    [Tooltip("Input Fields for save slot renaming")]
+    public TMP_InputField[] saveNames = new TMP_InputField[3];
+    [Tooltip("Save Interface used to retrieve active game scene")]
+    public PlayerAcommodationsSaveInterface gameSceneSaveInterface;
+
     //PRIVATE VARIABLES
     private Coroutine sceneLoadRoutine;
     private Resolution[] availableResolutions;
@@ -111,7 +117,11 @@ public class PlayerAcommodationsManager : MonoBehaviour
         {
             string key = "saveName_" + i;
             if (PlayerPrefs.HasKey(key))
-                PlayerAcommSaveGlobal.saveSlots[i] = PlayerPrefs.GetString(key);
+            {
+                string newName = PlayerPrefs.GetString(key);
+                PlayerAcommSaveGlobal.saveSlots[i] = newName;
+                saveNames[i]?.SetTextWithoutNotify(newName);
+            }
             else
                 PlayerPrefs.SetString(key, PlayerAcommSaveGlobal.saveSlots[i]);
         }
@@ -120,6 +130,9 @@ public class PlayerAcommodationsManager : MonoBehaviour
             PlayerAcommSaveGlobal.activeSaveSlot = PlayerPrefs.GetInt("activeSaveSlot");
         else
             PlayerPrefs.SetInt("activeSaveSlot", 0);
+
+        if (gameSceneSaveInterface != null)
+            gameSceneSaveInterface.fallbackString = defaultGameScene;
     }
 
     private void Start()
@@ -792,7 +805,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
             SetPaused(!paused);
     }
 
-    private void SetPaused(bool newState)
+    public void SetPaused(bool newState)
     {
         paused = newState;
         if (!paused)

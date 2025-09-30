@@ -32,15 +32,45 @@ public class PlayerAcommodationsSaveInterface : MonoBehaviour
     public void SaveFloat(float f) => PlayerAcommSaveGlobal.SetFloat(key, f);
     public void SaveBool(bool b) => PlayerAcommSaveGlobal.SetBool(key, b);
 
-    public void LoadString() => onLoadString.Invoke(PlayerAcommSaveGlobal.GetString(key));
-    public void LoadInt() => onLoadInt.Invoke(PlayerAcommSaveGlobal.GetInt(key));
-    public void LoadFloat() => onLoadFloat.Invoke(PlayerAcommSaveGlobal.GetFloat(key));
-    public void LoadBool() => onLoadBool.Invoke(PlayerAcommSaveGlobal.GetBool(key));
+    public void LoadString()
+    {
+        if (PlayerAcommSaveGlobal.GetString(key, out string result))
+            onLoadString.Invoke(result);
+        else
+            onLoadString.Invoke(fallbackString);
+    }
+    public void LoadInt()
+    {
+        if (PlayerAcommSaveGlobal.GetInt(key, out int result))
+            onLoadInt.Invoke(result);
+        else
+            onLoadInt.Invoke(fallbackInt);
+    }
+    public void LoadFloat()
+    {
+        if (PlayerAcommSaveGlobal.GetFloat(key, out float result))
+            onLoadFloat.Invoke(result);
+        else
+            onLoadFloat.Invoke(fallbackFloat);
+    }
+    public void LoadBool()
+    {
+        if (PlayerAcommSaveGlobal.GetBool(key, out bool result))
+            onLoadBool.Invoke(result);
+        else
+            onLoadBool.Invoke(fallbackBool);
+    }
 
     public void CommitSaveData() => PlayerAcommSaveGlobal.CommitSaveData();
     public void CommitSaveData(string saveName) => PlayerAcommSaveGlobal.CommitSaveData(saveName);
     public void LoadSaveData() => PlayerAcommSaveGlobal.LoadSaveData();
     public void LoadSaveData(string saveName) => PlayerAcommSaveGlobal.LoadSaveData(saveName);
+    
+    public void LoadSlot(int slot)
+    {
+        PlayerAcommSaveGlobal.activeSaveSlot = slot;
+        LoadSaveData();
+    }
 
     public void SetSlot0Name(string newName) => SetSlotName(0, newName);
     public void SetSlot1Name(string newName) => SetSlotName(1, newName);
@@ -57,26 +87,46 @@ public static class PlayerAcommSaveGlobal
 {
     public static Dictionary<string, string> activeSaveData;
     public static int activeSaveSlot = 0;
-    public static string[] saveSlots = new string[] { "default0", "default1", "default2" };
+    public static string[] saveSlots = new string[] { "Save 0", "Save 1", "Save 2" };
 
-    public static string GetString(string key)
+    public static bool GetString(string key, out string result)
     {
-        return activeSaveData[key];
+        return GetValue(key, out result);
     }
 
-    public static int GetInt(string key)
+    public static bool GetInt(string key, out int result)
     {
-        return int.Parse(activeSaveData[key]);
+        bool success = GetValue(key, out string rawValue);
+        result = success ? int.Parse(rawValue) : 0;
+        return success;
     }
 
-    public static float GetFloat(string key)
+    public static bool GetFloat(string key, out float result)
     {
-        return float.Parse(activeSaveData[key]);
+        bool success = GetValue(key, out string rawValue);
+        result = success ? float.Parse(rawValue) : 0;
+        return success;
     }
 
-    public static bool GetBool(string key)
+    public static bool GetBool(string key, out bool result)
     {
-        return bool.Parse(activeSaveData[key]);
+        bool success = GetValue(key, out string rawValue);
+        result = success ? bool.Parse(rawValue) : false;
+        return success;
+    }
+
+    public static bool GetValue(string key, out string result)
+    {
+        try
+        {
+            result = activeSaveData[key];
+            return true;
+        }
+        catch
+        {
+            result = "";
+            return false;
+        }
     }
 
     public static void SetString(string key, string value)
