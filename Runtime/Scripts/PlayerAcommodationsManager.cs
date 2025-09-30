@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.Events;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -25,6 +26,10 @@ public class PlayerAcommodationsManager : MonoBehaviour
     public string pauseMenuName = "PauseMenu";
     [Tooltip("Pause Button")]
     public InputAction pauseInput;
+    [Tooltip("Called when the game is paused")]
+    public UnityEvent onGamePaused;
+    [Tooltip("Called when the game is unpaused")]
+    public UnityEvent onGameUnpaused;
 
     [Header("Loading Screen(optional)")]
     [Tooltip("Prefab to enable when loading a new scene")]
@@ -851,9 +856,13 @@ public class PlayerAcommodationsManager : MonoBehaviour
             UpdateGraphicsDropdowns();
             PopulateDisplayOptions();
             SwitchToActiveMainMenu();
+            onGamePaused.Invoke();
         }
         else
+        {
             SetPaused(!paused);
+            onGameUnpaused.Invoke();
+        }
     }
 
     public void SetPaused(bool newState)
