@@ -856,12 +856,14 @@ public class PlayerAcommodationsManager : MonoBehaviour
             UpdateGraphicsDropdowns();
             PopulateDisplayOptions();
             SwitchToActiveMainMenu();
-            onGamePaused.Invoke();
         }
         else
         {
             SetPaused(!paused);
-            onGameUnpaused.Invoke();
+            if (paused)
+                onGamePaused.Invoke();
+            else
+                onGameUnpaused.Invoke();
         }
     }
 
