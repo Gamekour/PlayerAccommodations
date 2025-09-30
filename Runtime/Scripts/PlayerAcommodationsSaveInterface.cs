@@ -32,6 +32,14 @@ public class PlayerAcommodationsSaveInterface : MonoBehaviour
     public void SaveFloat(float f) => PlayerAcommSaveGlobal.SetFloat(key, f);
     public void SaveBool(bool b) => PlayerAcommSaveGlobal.SetBool(key, b);
 
+    private void OnEnable()
+    {
+        if (loadStringOnEnable) LoadString();
+        if (loadIntOnEnable) LoadInt();
+        if (loadFloatOnEnable) LoadFloat();
+        if (loadBoolOnEnable) LoadBool();
+    }
+
     public void LoadString()
     {
         if (PlayerAcommSaveGlobal.GetString(key, out string result))
@@ -76,6 +84,9 @@ public class PlayerAcommodationsSaveInterface : MonoBehaviour
     public void SetSlot1Name(string newName) => SetSlotName(1, newName);
     public void SetSlot2Name(string newName) => SetSlotName(2, newName);
 
+    public void DeleteSaveSlot(int i) => PlayerAcommSaveGlobal.DeleteSaveSlot(i);
+    public void DeleteSaveFile(string s) => PlayerAcommSaveGlobal.DeleteSaveFile(s);
+
     private void SetSlotName(int slot, string newName)
     {
         PlayerAcommSaveGlobal.RenameSave(PlayerAcommSaveGlobal.saveSlots[slot], newName);
@@ -85,7 +96,7 @@ public class PlayerAcommodationsSaveInterface : MonoBehaviour
 
 public static class PlayerAcommSaveGlobal
 {
-    public static Dictionary<string, string> activeSaveData;
+    public static Dictionary<string, string> activeSaveData = new();
     public static int activeSaveSlot = 0;
     public static string[] saveSlots = new string[] { "Save 0", "Save 1", "Save 2" };
 
@@ -196,7 +207,10 @@ public static class PlayerAcommSaveGlobal
         string filename = "save_" + saveName;
         string filepath = Path.Combine(Application.persistentDataPath, filename);
         if (!File.Exists(filepath))
+        {
+            activeSaveData.Clear();
             return false;
+        }
 
         activeSaveData = ConvertJsonToSave(File.ReadAllText(filepath));
         return true;
@@ -214,5 +228,21 @@ public static class PlayerAcommSaveGlobal
         File.WriteAllText(filepathNew, jsonContents);
         File.Delete(filepathOld);
         return true;
+    }
+
+    public static void DeleteSaveFile(string saveName)
+    {
+        string filename = "save_" + saveName;
+        string filepath = Path.Combine(Application.persistentDataPath, filename);
+        if (File.Exists(filepath))
+            File.Delete(filepath);
+    }
+
+    public static void DeleteSaveSlot(int slot)
+    {
+        string filename = "save_" + saveSlots[slot];
+        string filepath = Path.Combine(Application.persistentDataPath, filename);
+        if (File.Exists(filepath))
+            File.Delete(filepath);
     }
 }

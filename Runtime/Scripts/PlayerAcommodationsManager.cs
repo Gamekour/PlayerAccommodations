@@ -69,6 +69,10 @@ public class PlayerAcommodationsManager : MonoBehaviour
     public int defaultQualityTier = 1;
     [Tooltip("Prompt to confirm changes if leaving settings without saving")]
     public GameObject confirmChangesPrompt;
+    [Tooltip("Automatically commit save data on a regular interval")]
+    public bool doAutosave = true;
+    [Tooltip("Auto-save interval, in seconds")]
+    public float autosaveInterval = 1;
 
     [Header("Save/Load")]
     [Tooltip("Input Fields for save slot renaming")]
@@ -133,6 +137,9 @@ public class PlayerAcommodationsManager : MonoBehaviour
 
         if (gameSceneSaveInterface != null)
             gameSceneSaveInterface.fallbackString = defaultGameScene;
+
+        if (doAutosave)
+            StartCoroutine(Autosave(autosaveInterval));
     }
 
     private void Start()
@@ -159,13 +166,22 @@ public class PlayerAcommodationsManager : MonoBehaviour
     public void LoadMainMenuScene()
     {
         if (sceneLoadRoutine == null)
+        {
             StartCoroutine(LoadSceneInternal(mainMenuScene));
+            PlayerAcommSaveGlobal.CommitSaveData();
+        }
     }
 
     public void LoadSceneByName(string sceneName)
     {
         if (sceneLoadRoutine == null)
             StartCoroutine(LoadSceneInternal(sceneName));
+    }
+
+    public void LoadSceneByIndex(int index)
+    {
+        if (sceneLoadRoutine == null)
+            StartCoroutine(LoadSceneInternal(index));
     }
 
     public void LoadNextScene()
@@ -183,6 +199,41 @@ public class PlayerAcommodationsManager : MonoBehaviour
         {
             int currentScene = SceneManager.GetActiveScene().buildIndex;
             StartCoroutine(LoadSceneInternal(currentScene - 1));
+        }
+    }
+
+    public void LoadNextSceneAndUnlock()
+    {
+        int currentScene = SceneManager.GetActiveScene().buildIndex;
+        PlayerAcommSaveGlobal.SetBool("unlockSceneIndex_" + (currentScene + 1).ToString(), true);
+        LoadSceneByIndex(currentScene + 1);
+    }
+
+    public void LoadPrevSceneAndUnlock()
+    {
+        if (sceneLoadRoutine != null)
+        {
+            int currentScene = SceneManager.GetActiveScene().buildIndex;
+            PlayerAcommSaveGlobal.SetBool("unlockSceneIndex_" + (currentScene - 1).ToString(), true);
+            LoadSceneByIndex(currentScene - 1);
+        }
+    }
+
+    public void LoadSceneByNameAndUnlock(string sceneName)
+    {
+        if (sceneLoadRoutine != null)
+        {
+            StartCoroutine(LoadSceneInternal(sceneName));
+            PlayerAcommSaveGlobal.SetBool("unlockSceneName_" + sceneName, true);
+        }
+    }
+
+    public void LoadSceneByIndexAndUnlock(int index)
+    {
+        if (sceneLoadRoutine != null)
+        {
+            PlayerAcommSaveGlobal.SetBool("unlockSceneIndex_" + index, true);
+            LoadSceneByIndex(index);
         }
     }
 
@@ -856,6 +907,16 @@ public class PlayerAcommodationsManager : MonoBehaviour
             loadSpinner.transform.Rotate(transform.forward, loadSpinnerSpeed);
         }
         loadingScreen?.SetActive(false);
+    }
+
+    private IEnumerator Autosave(float interval)
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(interval);
+            if (SceneManager.GetActiveScene().name != mainMenuScene)
+                PlayerAcommSaveGlobal.CommitSaveData();
+        }
     }
 }
 
