@@ -5,13 +5,13 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Events;
 
-public class PlayerAcommSaveData
+public class PlayerAccommSaveData
 {
     public List<string> keys;
     public List<string> values;
 }
 
-public class PlayerAcommodationsSaveInterface : MonoBehaviour
+public class PlayerAccommodationsSaveInterface : MonoBehaviour
 {
     public string key;
     public bool loadStringOnEnable = false;
@@ -27,10 +27,10 @@ public class PlayerAcommodationsSaveInterface : MonoBehaviour
     public UnityEvent<float> onLoadFloat;
     public UnityEvent<bool> onLoadBool;
 
-    public void SaveString(string s) => PlayerAcommSaveGlobal.SetString(key, s);
-    public void SaveInt(int i) => PlayerAcommSaveGlobal.SetInt(key, i);
-    public void SaveFloat(float f) => PlayerAcommSaveGlobal.SetFloat(key, f);
-    public void SaveBool(bool b) => PlayerAcommSaveGlobal.SetBool(key, b);
+    public void SaveString(string s) => PlayerAccommSaveGlobal.SetString(key, s);
+    public void SaveInt(int i) => PlayerAccommSaveGlobal.SetInt(key, i);
+    public void SaveFloat(float f) => PlayerAccommSaveGlobal.SetFloat(key, f);
+    public void SaveBool(bool b) => PlayerAccommSaveGlobal.SetBool(key, b);
 
     private void OnEnable()
     {
@@ -42,41 +42,41 @@ public class PlayerAcommodationsSaveInterface : MonoBehaviour
 
     public void LoadString()
     {
-        if (PlayerAcommSaveGlobal.GetString(key, out string result))
+        if (PlayerAccommSaveGlobal.GetString(key, out string result))
             onLoadString.Invoke(result);
         else
             onLoadString.Invoke(fallbackString);
     }
     public void LoadInt()
     {
-        if (PlayerAcommSaveGlobal.GetInt(key, out int result))
+        if (PlayerAccommSaveGlobal.GetInt(key, out int result))
             onLoadInt.Invoke(result);
         else
             onLoadInt.Invoke(fallbackInt);
     }
     public void LoadFloat()
     {
-        if (PlayerAcommSaveGlobal.GetFloat(key, out float result))
+        if (PlayerAccommSaveGlobal.GetFloat(key, out float result))
             onLoadFloat.Invoke(result);
         else
             onLoadFloat.Invoke(fallbackFloat);
     }
     public void LoadBool()
     {
-        if (PlayerAcommSaveGlobal.GetBool(key, out bool result))
+        if (PlayerAccommSaveGlobal.GetBool(key, out bool result))
             onLoadBool.Invoke(result);
         else
             onLoadBool.Invoke(fallbackBool);
     }
 
-    public void CommitSaveData() => PlayerAcommSaveGlobal.CommitSaveData();
-    public void CommitSaveData(string saveName) => PlayerAcommSaveGlobal.CommitSaveData(saveName);
-    public void LoadSaveData() => PlayerAcommSaveGlobal.LoadSaveData();
-    public void LoadSaveData(string saveName) => PlayerAcommSaveGlobal.LoadSaveData(saveName);
+    public void CommitSaveData() => PlayerAccommSaveGlobal.CommitSaveData();
+    public void CommitSaveData(string saveName) => PlayerAccommSaveGlobal.CommitSaveData(saveName);
+    public void LoadSaveData() => PlayerAccommSaveGlobal.LoadSaveData();
+    public void LoadSaveData(string saveName) => PlayerAccommSaveGlobal.LoadSaveData(saveName);
     
     public void LoadSlot(int slot)
     {
-        PlayerAcommSaveGlobal.activeSaveSlot = slot;
+        PlayerAccommSaveGlobal.activeSaveSlot = slot;
         LoadSaveData();
     }
 
@@ -84,17 +84,17 @@ public class PlayerAcommodationsSaveInterface : MonoBehaviour
     public void SetSlot1Name(string newName) => SetSlotName(1, newName);
     public void SetSlot2Name(string newName) => SetSlotName(2, newName);
 
-    public void DeleteSaveSlot(int i) => PlayerAcommSaveGlobal.DeleteSaveSlot(i);
-    public void DeleteSaveFile(string s) => PlayerAcommSaveGlobal.DeleteSaveFile(s);
+    public void DeleteSaveSlot(int i) => PlayerAccommSaveGlobal.DeleteSaveSlot(i);
+    public void DeleteSaveFile(string s) => PlayerAccommSaveGlobal.DeleteSaveFile(s);
 
     private void SetSlotName(int slot, string newName)
     {
-        PlayerAcommSaveGlobal.RenameSave(PlayerAcommSaveGlobal.saveSlots[slot], newName);
+        PlayerAccommSaveGlobal.RenameSave(PlayerAccommSaveGlobal.saveSlots[slot], newName);
         PlayerPrefs.SetString("saveName_" + slot, newName);
     }
 }
 
-public static class PlayerAcommSaveGlobal
+public static class PlayerAccommSaveGlobal
 {
     public static Dictionary<string, string> activeSaveData = new();
     public static int activeSaveSlot = 0;
@@ -174,7 +174,7 @@ public static class PlayerAcommSaveGlobal
 
     public static string ConvertSaveToJson()
     {
-        PlayerAcommSaveData saveData = new PlayerAcommSaveData();
+        PlayerAccommSaveData saveData = new PlayerAccommSaveData();
         saveData.keys = activeSaveData.Keys.ToList();
         saveData.values = activeSaveData.Values.ToList();
         return JsonUtility.ToJson(saveData);
@@ -182,7 +182,7 @@ public static class PlayerAcommSaveGlobal
 
     public static Dictionary<string, string> ConvertJsonToSave(string json)
     {
-        PlayerAcommSaveData saveData = (PlayerAcommSaveData)JsonUtility.FromJson(json, typeof(PlayerAcommSaveData));
+        PlayerAccommSaveData saveData = (PlayerAccommSaveData)JsonUtility.FromJson(json, typeof(PlayerAccommSaveData));
         Dictionary<string, string> result = new Dictionary<string, string>();
         for (int i = 0; i < saveData.keys.Count; i++)
             result.Add(saveData.keys[i], saveData.values[i]);

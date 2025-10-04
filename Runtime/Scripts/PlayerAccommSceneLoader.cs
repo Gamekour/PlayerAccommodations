@@ -4,23 +4,23 @@ using UnityEngine;
 
 public class PlayerAccommSceneLoader : MonoBehaviour
 {
-    public void LoadSceneByName(string name) => PlayerAcommodationsManager.Instance.LoadSceneByName(name);
+    public void LoadSceneByName(string name) => PlayerAccommodationsManager.Instance.LoadSceneByName(name);
 
-    public void LoadNextScene() => PlayerAcommodationsManager.Instance.LoadNextScene();
+    public void LoadNextScene() => PlayerAccommodationsManager.Instance.LoadNextScene();
 
-    public void LoadPrevScene() => PlayerAcommodationsManager.Instance.LoadPrevScene();
+    public void LoadPrevScene() => PlayerAccommodationsManager.Instance.LoadPrevScene();
 
-    public void LoadActiveGameScene() => PlayerAcommodationsManager.Instance.LoadActiveGameScene();
+    public void LoadActiveGameScene() => PlayerAccommodationsManager.Instance.LoadActiveGameScene();
 
-    public void LoadMainMenuScene() => PlayerAcommodationsManager.Instance.LoadMainMenuScene();
+    public void LoadMainMenuScene() => PlayerAccommodationsManager.Instance.LoadMainMenuScene();
 
-    public void LoadSceneByNameAndUnlock(string name) => PlayerAcommodationsManager.Instance.LoadSceneByNameAndUnlock(name);
+    public void LoadSceneByNameAndUnlock(string name) => PlayerAccommodationsManager.Instance.LoadSceneByNameAndUnlock(name);
 
-    public void LoadNextSceneAndUnlock() => PlayerAcommodationsManager.Instance.LoadNextSceneAndUnlock();
+    public void LoadNextSceneAndUnlock() => PlayerAccommodationsManager.Instance.LoadNextSceneAndUnlock();
 
-    public void LoadPrevSceneAndUnlock() => PlayerAcommodationsManager.Instance.LoadPrevSceneAndUnlock();
+    public void LoadPrevSceneAndUnlock() => PlayerAccommodationsManager.Instance.LoadPrevSceneAndUnlock();
 
-    public void LoadSceneByIndex(int index) => PlayerAcommodationsManager.Instance.LoadSceneByIndex(index);
+    public void LoadSceneByIndex(int index) => PlayerAccommodationsManager.Instance.LoadSceneByIndex(index);
     
-    public void LoadSceneByIndexAndUnlock(int index) => PlayerAcommodationsManager.Instance.LoadSceneByIndexAndUnlock(index);
+    public void LoadSceneByIndexAndUnlock(int index) => PlayerAccommodationsManager.Instance.LoadSceneByIndexAndUnlock(index);
 }

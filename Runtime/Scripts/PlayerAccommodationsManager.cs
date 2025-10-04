@@ -9,15 +9,15 @@ using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public class PlayerAcommodationsManager : MonoBehaviour
+public class PlayerAccommodationsManager : MonoBehaviour
 {
-    public static PlayerAcommodationsManager Instance { get; private set; }
+    public static PlayerAccommodationsManager Instance { get; private set; }
 
     [Header("Main Menu")]
     [Tooltip("Load this scene when clicking Play, unless save data overwrites this")]
-    public string defaultGameScene = "PlayerAcommodationsSampleGameScene";
+    public string defaultGameScene = "PlayerAccommodationsSampleGameScene";
     [Tooltip("Name of the main menu scene")]
-    public string mainMenuScene = "PlayerAcommodationsSampleScene";
+    public string mainMenuScene = "PlayerAccommodationsSampleScene";
     [Tooltip("List of menus to switch between")]
     public GameObject[] Menus;
     [Tooltip("Name of the main menu")]
@@ -83,7 +83,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
     [Tooltip("Input Fields for save slot renaming")]
     public TMP_InputField[] saveNames = new TMP_InputField[3];
     [Tooltip("Save Interface used to retrieve active game scene")]
-    public PlayerAcommodationsSaveInterface gameSceneSaveInterface;
+    public PlayerAccommodationsSaveInterface gameSceneSaveInterface;
 
     //PRIVATE VARIABLES
     private Coroutine sceneLoadRoutine;
@@ -108,10 +108,10 @@ public class PlayerAcommodationsManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
         if (PlayerPrefs.HasKey("activeGameScene"))
-            PlayerAcommGlobal.activeGameScene = PlayerPrefs.GetString("activeGameScene");
+            PlayerAccommGlobal.activeGameScene = PlayerPrefs.GetString("activeGameScene");
         else
         {
-            PlayerAcommGlobal.activeGameScene = defaultGameScene;
+            PlayerAccommGlobal.activeGameScene = defaultGameScene;
             PlayerPrefs.SetString("activeGameScene", defaultGameScene);
         }
 
@@ -128,15 +128,15 @@ public class PlayerAcommodationsManager : MonoBehaviour
             if (PlayerPrefs.HasKey(key))
             {
                 string newName = PlayerPrefs.GetString(key);
-                PlayerAcommSaveGlobal.saveSlots[i] = newName;
+                PlayerAccommSaveGlobal.saveSlots[i] = newName;
                 saveNames[i]?.SetTextWithoutNotify(newName);
             }
             else
-                PlayerPrefs.SetString(key, PlayerAcommSaveGlobal.saveSlots[i]);
+                PlayerPrefs.SetString(key, PlayerAccommSaveGlobal.saveSlots[i]);
         }
 
         if (PlayerPrefs.HasKey("activeSaveSlot"))
-            PlayerAcommSaveGlobal.activeSaveSlot = PlayerPrefs.GetInt("activeSaveSlot");
+            PlayerAccommSaveGlobal.activeSaveSlot = PlayerPrefs.GetInt("activeSaveSlot");
         else
             PlayerPrefs.SetInt("activeSaveSlot", 0);
 
@@ -160,12 +160,12 @@ public class PlayerAcommodationsManager : MonoBehaviour
         InitializeQualityTierDropdown();
     }
 
-    public void SetActiveGameScene(string sceneName) => PlayerAcommGlobal.activeGameScene = sceneName;
+    public void SetActiveGameScene(string sceneName) => PlayerAccommGlobal.activeGameScene = sceneName;
 
     public void LoadActiveGameScene()
     {
         if (sceneLoadRoutine == null)
-            StartCoroutine(LoadSceneInternal(PlayerAcommGlobal.activeGameScene));
+            StartCoroutine(LoadSceneInternal(PlayerAccommGlobal.activeGameScene));
     }
 
     public void LoadMainMenuScene()
@@ -173,7 +173,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
         if (sceneLoadRoutine == null)
         {
             StartCoroutine(LoadSceneInternal(mainMenuScene));
-            PlayerAcommSaveGlobal.CommitSaveData();
+            PlayerAccommSaveGlobal.CommitSaveData();
         }
     }
 
@@ -210,7 +210,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
     public void LoadNextSceneAndUnlock()
     {
         int currentScene = SceneManager.GetActiveScene().buildIndex;
-        PlayerAcommSaveGlobal.SetBool("unlockSceneIndex_" + (currentScene + 1).ToString(), true);
+        PlayerAccommSaveGlobal.SetBool("unlockSceneIndex_" + (currentScene + 1).ToString(), true);
         LoadSceneByIndex(currentScene + 1);
     }
 
@@ -219,7 +219,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
         if (sceneLoadRoutine != null)
         {
             int currentScene = SceneManager.GetActiveScene().buildIndex;
-            PlayerAcommSaveGlobal.SetBool("unlockSceneIndex_" + (currentScene - 1).ToString(), true);
+            PlayerAccommSaveGlobal.SetBool("unlockSceneIndex_" + (currentScene - 1).ToString(), true);
             LoadSceneByIndex(currentScene - 1);
         }
     }
@@ -229,7 +229,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
         if (sceneLoadRoutine != null)
         {
             StartCoroutine(LoadSceneInternal(sceneName));
-            PlayerAcommSaveGlobal.SetBool("unlockSceneName_" + sceneName, true);
+            PlayerAccommSaveGlobal.SetBool("unlockSceneName_" + sceneName, true);
         }
     }
 
@@ -237,7 +237,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
     {
         if (sceneLoadRoutine != null)
         {
-            PlayerAcommSaveGlobal.SetBool("unlockSceneIndex_" + index, true);
+            PlayerAccommSaveGlobal.SetBool("unlockSceneIndex_" + index, true);
             LoadSceneByIndex(index);
         }
     }
@@ -245,14 +245,14 @@ public class PlayerAcommodationsManager : MonoBehaviour
     public void LoadActiveSettingsPanel()
     {
         for (int i = 0; i < settingsPanels.Length; i++)
-            settingsPanels[i].SetActive(i == PlayerAcommGlobal.activeSettingsPanel);
-        videoPreview.SetActive(PlayerAcommGlobal.activeSettingsPanel == videoPanelIndex);
-        changeControlPanel.SetActive(PlayerAcommGlobal.activeSettingsPanel == videoPanelIndex);
+            settingsPanels[i].SetActive(i == PlayerAccommGlobal.activeSettingsPanel);
+        videoPreview.SetActive(PlayerAccommGlobal.activeSettingsPanel == videoPanelIndex);
+        changeControlPanel.SetActive(PlayerAccommGlobal.activeSettingsPanel == videoPanelIndex);
     }
 
     public void SetSettingsPanel(int index)
     {
-        PlayerAcommGlobal.activeSettingsPanel = index;
+        PlayerAccommGlobal.activeSettingsPanel = index;
         LoadActiveSettingsPanel();
     }
 
@@ -538,20 +538,20 @@ public class PlayerAcommodationsManager : MonoBehaviour
 
     public void GraphicsOptionCallback(TMP_Dropdown TMP_Dropdown)
     {
-        if (PlayerAcommGlobal.queuedQualitySettingChanges.ContainsKey(TMP_Dropdown.name))
-            PlayerAcommGlobal.queuedQualitySettingChanges[TMP_Dropdown.name] = TMP_Dropdown.value;
+        if (PlayerAccommGlobal.queuedQualitySettingChanges.ContainsKey(TMP_Dropdown.name))
+            PlayerAccommGlobal.queuedQualitySettingChanges[TMP_Dropdown.name] = TMP_Dropdown.value;
         else
-            PlayerAcommGlobal.queuedQualitySettingChanges.Add(TMP_Dropdown.name, TMP_Dropdown.value);
-        PlayerAcommGlobal.targetQualityTier = -1;
+            PlayerAccommGlobal.queuedQualitySettingChanges.Add(TMP_Dropdown.name, TMP_Dropdown.value);
+        PlayerAccommGlobal.targetQualityTier = -1;
         qualityTierDropdown.SetValueWithoutNotify(0);
         changeMade = true;
     }
 
     public void SetQualityTier(int index)
     {
-        PlayerAcommGlobal.targetQualityTier = index - 1;
+        PlayerAccommGlobal.targetQualityTier = index - 1;
         int returnToQualityLevel = QualitySettings.GetQualityLevel();
-        if (PlayerAcommGlobal.targetQualityTier != -1)
+        if (PlayerAccommGlobal.targetQualityTier != -1)
             QualitySettings.SetQualityLevel(index);
         UpdateGraphicsDropdowns();
         QualitySettings.SetQualityLevel(returnToQualityLevel);
@@ -665,7 +665,7 @@ public class PlayerAcommodationsManager : MonoBehaviour
 
     public void SetFullscreenMode(int index)
     {
-        PlayerAcommGlobal.targetFullscreenMode = (FullScreenMode)index;
+        PlayerAccommGlobal.targetFullscreenMode = (FullScreenMode)index;
         changeMade = true;
     }
 
@@ -699,38 +699,38 @@ public class PlayerAcommodationsManager : MonoBehaviour
         refreshRateDropdown.SetValueWithoutNotify(defaultRefreshRateOption);
         resolutionDropdown.onValueChanged.AddListener((int value) => SetResolution(value));
         refreshRateDropdown.onValueChanged.AddListener((int value) => SetRefreshRate(value));
-        PlayerAcommGlobal.targetResolution = Screen.currentResolution;
-        PlayerAcommGlobal.targetRefreshRate = Screen.currentResolution.refreshRateRatio;
+        PlayerAccommGlobal.targetResolution = Screen.currentResolution;
+        PlayerAccommGlobal.targetRefreshRate = Screen.currentResolution.refreshRateRatio;
         fullscreenModeDropdown.SetValueWithoutNotify((int)Screen.fullScreenMode);
     }
 
     public void SetResolution(int index)
     {
         Resolution newRes = availableResolutions[index];
-        newRes.refreshRateRatio = PlayerAcommGlobal.targetRefreshRate;
-        PlayerAcommGlobal.targetResolution = newRes;
+        newRes.refreshRateRatio = PlayerAccommGlobal.targetRefreshRate;
+        PlayerAccommGlobal.targetResolution = newRes;
         changeMade = true;
     }
 
     public void SetRefreshRate(int index)
     {
-        Resolution newRes = PlayerAcommGlobal.targetResolution;
+        Resolution newRes = PlayerAccommGlobal.targetResolution;
         newRes.refreshRateRatio = availableRefreshRates[index];
-        PlayerAcommGlobal.targetResolution = newRes;
+        PlayerAccommGlobal.targetResolution = newRes;
         changeMade = true;
     }
 
     public void ApplyChanges()
     {
-        Screen.SetResolution(PlayerAcommGlobal.targetResolution.width, PlayerAcommGlobal.targetResolution.height, PlayerAcommGlobal.targetFullscreenMode, PlayerAcommGlobal.targetRefreshRate);
-        if (PlayerAcommGlobal.targetQualityTier != -1)
+        Screen.SetResolution(PlayerAccommGlobal.targetResolution.width, PlayerAccommGlobal.targetResolution.height, PlayerAccommGlobal.targetFullscreenMode, PlayerAccommGlobal.targetRefreshRate);
+        if (PlayerAccommGlobal.targetQualityTier != -1)
         {
-            QualitySettings.SetQualityLevel(PlayerAcommGlobal.targetQualityTier);
+            QualitySettings.SetQualityLevel(PlayerAccommGlobal.targetQualityTier);
         }
-        else if (PlayerAcommGlobal.queuedQualitySettingChanges.Count > 0)
+        else if (PlayerAccommGlobal.queuedQualitySettingChanges.Count > 0)
         {
-            foreach (string s in PlayerAcommGlobal.queuedQualitySettingChanges.Keys)
-                ChangeQualitySettingByName(s, PlayerAcommGlobal.queuedQualitySettingChanges[s]);
+            foreach (string s in PlayerAccommGlobal.queuedQualitySettingChanges.Keys)
+                ChangeQualitySettingByName(s, PlayerAccommGlobal.queuedQualitySettingChanges[s]);
         }
         SaveSettings();
         changeMade = false;
@@ -741,19 +741,19 @@ public class PlayerAcommodationsManager : MonoBehaviour
         foreach (GameObject g in graphicsDropdowns)
             Destroy(g);
         graphicsDropdowns.Clear();
-        PlayerAcommGlobal.queuedQualitySettingChanges.Clear();
+        PlayerAccommGlobal.queuedQualitySettingChanges.Clear();
         InitializeGraphicsDropdowns();
     }
 
     public void SaveSettings()
     {
-        PlayerPrefs.SetInt("qualityTier", PlayerAcommGlobal.targetQualityTier);
-        if (PlayerAcommGlobal.targetQualityTier == -1) return;
-        PlayerPrefs.SetInt("fullscreenMode", (int)PlayerAcommGlobal.targetFullscreenMode);
-        PlayerPrefs.SetInt("resolutionWidth", PlayerAcommGlobal.targetResolution.width);
-        PlayerPrefs.SetInt("resolutionHeight", PlayerAcommGlobal.targetResolution.height);
-        PlayerPrefs.SetString("refreshRateNum", PlayerAcommGlobal.targetRefreshRate.numerator.ToString());
-        PlayerPrefs.SetString("refreshRateDen", PlayerAcommGlobal.targetRefreshRate.denominator.ToString());
+        PlayerPrefs.SetInt("qualityTier", PlayerAccommGlobal.targetQualityTier);
+        if (PlayerAccommGlobal.targetQualityTier == -1) return;
+        PlayerPrefs.SetInt("fullscreenMode", (int)PlayerAccommGlobal.targetFullscreenMode);
+        PlayerPrefs.SetInt("resolutionWidth", PlayerAccommGlobal.targetResolution.width);
+        PlayerPrefs.SetInt("resolutionHeight", PlayerAccommGlobal.targetResolution.height);
+        PlayerPrefs.SetString("refreshRateNum", PlayerAccommGlobal.targetRefreshRate.numerator.ToString());
+        PlayerPrefs.SetString("refreshRateDen", PlayerAccommGlobal.targetRefreshRate.denominator.ToString());
         PlayerPrefs.SetInt("antiAliasing", QualitySettings.antiAliasing);
         PlayerPrefs.SetInt("anisotropicFiltering", (int)QualitySettings.anisotropicFiltering);
         PlayerPrefs.SetInt("pixelLightCount", QualitySettings.pixelLightCount);
@@ -781,11 +781,11 @@ public class PlayerAcommodationsManager : MonoBehaviour
 
     public void LoadSettings()
     {
-        // PlayerAcommGlobal
-        PlayerAcommGlobal.targetFullscreenMode =
+        // PlayerAccommGlobal
+        PlayerAccommGlobal.targetFullscreenMode =
             (FullScreenMode)PlayerPrefs.GetInt("fullscreenMode", (int)FullScreenMode.FullScreenWindow);
 
-        PlayerAcommGlobal.targetResolution = new Resolution
+        PlayerAccommGlobal.targetResolution = new Resolution
         {
             width = PlayerPrefs.GetInt("resolutionWidth", Screen.currentResolution.width),
             height = PlayerPrefs.GetInt("resolutionHeight", Screen.currentResolution.height),
@@ -796,10 +796,10 @@ public class PlayerAcommodationsManager : MonoBehaviour
             }
         };
 
-        PlayerAcommGlobal.targetQualityTier = PlayerPrefs.GetInt("qualityTier", defaultQualityTier);
-        if (PlayerAcommGlobal.targetQualityTier != -1)
+        PlayerAccommGlobal.targetQualityTier = PlayerPrefs.GetInt("qualityTier", defaultQualityTier);
+        if (PlayerAccommGlobal.targetQualityTier != -1)
         {
-            QualitySettings.SetQualityLevel(PlayerAcommGlobal.targetQualityTier);
+            QualitySettings.SetQualityLevel(PlayerAccommGlobal.targetQualityTier);
             return;
         }
 
@@ -926,12 +926,12 @@ public class PlayerAcommodationsManager : MonoBehaviour
         {
             yield return new WaitForSeconds(interval);
             if (SceneManager.GetActiveScene().name != mainMenuScene)
-                PlayerAcommSaveGlobal.CommitSaveData();
+                PlayerAccommSaveGlobal.CommitSaveData();
         }
     }
 }
 
-public static class PlayerAcommGlobal
+public static class PlayerAccommGlobal
 {
     public static string activeGameScene = "";
     public static int activeSettingsPanel = 0;
